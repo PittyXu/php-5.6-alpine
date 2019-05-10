@@ -1,6 +1,10 @@
-FROM alpine:3.9
+FROM alpine:3.5
 
 RUN apk add --update --no-cache bash \
+				libc-dev \
+				make \
+				g++ \
+				gcc \
 				curl \
 				curl-dev \
 				php5-intl \
@@ -68,25 +72,32 @@ RUN apk add --update --no-cache bash \
 				php5-mysqli \
   				apache2 \
 				libxml2-dev \
-				apache2-utils
+				apache2-utils \
+				imagemagick-dev \
+				ffmpeg \
+	&& curl -sS https://getcomposer.org/installer | php5 -- --install-dir=/usr/bin --filename=composer \
+	&& rm /usr/bin/iconv \
+	&& curl -SL http://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.14.tar.gz | tar -xz -C . \
+	&& cd libiconv-1.14 \
+	&& ./configure --prefix=/usr/local \
+	&& curl -SL https://raw.githubusercontent.com/mxe/mxe/7e231efd245996b886b501dad780761205ecf376/src/libiconv-1-fixes.patch | patch -p1 -u \
+	&& make \
+	&& make install \
+	&& libtool --finish /usr/local/lib \
+	&& cd .. \
+	&& rm -rf libiconv-1.14 \
+	&& rm -rf /var/cache/apk/* \
+	# AllowOverride ALL
+	&& sed -i '264s#AllowOverride None#AllowOverride All#' /etc/apache2/httpd.conf \
+	#Rewrite Moduble Enable
+	&& sed -i 's#\#LoadModule rewrite_module modules/mod_rewrite.so#LoadModule rewrite_module modules/mod_rewrite.so#' /etc/apache2/httpd.conf \
+	# Document Root to /var/www/html/
+	&& sed -i 's#/var/www/localhost/htdocs#/var/www/html#g' /etc/apache2/httpd.conf \
+	#Start apache
+	&& mkdir -p /run/apache2 \
+	&& mkdir /var/www/html/
 
-RUN apk add --update --no-cache imagemagick-dev \
-				ffmpeg
-#RUN ln -s /usr/bin/php5 /usr/bin/php
-RUN curl -sS https://getcomposer.org/installer | php5 -- --install-dir=/usr/bin --filename=composer 
-
-RUN  rm -rf /var/cache/apk/*
-
-# AllowOverride ALL
-RUN sed -i '264s#AllowOverride None#AllowOverride All#' /etc/apache2/httpd.conf
-#Rewrite Moduble Enable
-RUN sed -i 's#\#LoadModule rewrite_module modules/mod_rewrite.so#LoadModule rewrite_module modules/mod_rewrite.so#' /etc/apache2/httpd.conf
-# Document Root to /var/www/html/
-RUN sed -i 's#/var/www/localhost/htdocs#/var/www/html#g' /etc/apache2/httpd.conf
-#Start apache
-RUN mkdir -p /run/apache2
-
-RUN mkdir /var/www/html/
+ENV LD_PRELOAD /usr/local/lib/preloadable_libiconv.so
 
 VOLUME  /var/www/html/
 WORKDIR  /var/www/html/
