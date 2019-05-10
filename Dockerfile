@@ -1,10 +1,6 @@
 FROM alpine:3.5
 
 RUN apk add --update --no-cache bash \
-				libc-dev \
-				make \
-				g++ \
-				gcc \
 				curl \
 				curl-dev \
 				php5-intl \
@@ -75,17 +71,9 @@ RUN apk add --update --no-cache bash \
 				apache2-utils \
 				imagemagick-dev \
 				ffmpeg \
+	&& apk add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/community/ \
+		gnu-libiconv=1.15-r2 \
 	&& curl -sS https://getcomposer.org/installer | php5 -- --install-dir=/usr/bin --filename=composer \
-	&& rm /usr/bin/iconv \
-	&& curl -SL http://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.14.tar.gz | tar -xz -C . \
-	&& cd libiconv-1.14 \
-	&& ./configure --prefix=/usr/local \
-	&& curl -SL https://raw.githubusercontent.com/mxe/mxe/7e231efd245996b886b501dad780761205ecf376/src/libiconv-1-fixes.patch | patch -p1 -u \
-	&& make \
-	&& make install \
-	&& libtool --finish /usr/local/lib \
-	&& cd .. \
-	&& rm -rf libiconv-1.14 \
 	&& rm -rf /var/cache/apk/* \
 	# AllowOverride ALL
 	&& sed -i '264s#AllowOverride None#AllowOverride All#' /etc/apache2/httpd.conf \
